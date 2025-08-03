@@ -1,0 +1,104 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo de Usuario (dueño del negocio)
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  businessName  String?
+  businessType  String?   // cafeteria, panaderia, restaurante
+  
+  // Relaciones
+  clients       Client[]
+  interactions  Interaction[]
+  insights      AIInsight[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Modelo de Cliente (del negocio)
+model Client {
+  id            String    @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  
+  // Nuevos campos de información
+  idNumber      String?   // Número de identificación (cédula, pasaporte, etc.)
+  idType        String?   // Tipo de identificación (cedula, pasaporte, residencia)
+  address       String?   // Dirección
+  company       String?   // Empresa donde trabaja (opcional)
+  occupation    String?   // Ocupación o profesión
+  birthday      String?   // Fecha de nacimiento
+  notes         String?   // Notas generales sobre el cliente
+  tags          String    @default("[]") // Tags como JSON string (SQLite no soporta arrays nativos)
+  
+  // Métricas importantes
+  totalSpent    Float     @default(0)
+  visitCount    Int       @default(0)
+  lastVisit     DateTime?
+  averageSpent  Float     @default(0)
+  
+  // IA Scoring
+  churnRisk     Float?    // 0-1 probabilidad de pérdida
+  loyaltyScore  Float?    // 0-100 score de lealtad
+  
+  // Relaciones
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interactions  Interaction[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([lastVisit])
+  @@index([idNumber])
+}
+
+// Modelo de Interacción (visita, compra, etc)
+model Interaction {
+  id          String    @id @default(cuid())
+  type        String    // purchase, visit, note
+  amount      Float?
+  notes       String?
+  date        DateTime  @default(now())
+  
+  // Relaciones
+  clientId    String
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([clientId])
+  @@index([date])
+}
+
+// Modelo de Insights de IA
+model AIInsight {
+  id          String    @id @default(cuid())
+  type        String    // daily_summary, client_risk, sales_prediction
+  content     Json      // El insight en formato JSON
+  priority    Int       @default(0)
+  read        Boolean   @default(false)
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([userId, read])
+  @@index([createdAt])
+}
