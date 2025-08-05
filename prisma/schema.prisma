@@ -131,3 +131,64 @@ model AIInsight {
   @@index([userId, read])
   @@index([createdAt])
 }
+
+// Agregar estos modelos a tu schema.prisma existente
+
+model Task {
+  id        String   @id @default(cuid())
+  clientId  String
+  text      String
+  done      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Campos para IA futura
+  aiSuggested Boolean  @default(false)  // Si fue sugerida por IA
+  category    String?                   // call, email, follow-up, payment, etc
+  importance  String?                   // high, medium, low (para IA)
+  metadata    Json?                     // Para guardar datos extra de IA
+  
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  @@index([clientId, done])
+  @@index([clientId, createdAt])
+}
+
+// Para el futuro análisis con IA
+model ClientInsight {
+  id        String   @id @default(cuid())
+  clientId  String   @unique
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  // Análisis de comportamiento
+  purchasePattern     Json?      // Patrón de compras detectado por IA
+  communicationStyle  Json?      // Preferencias de comunicación
+  riskScore          Float?      // 0-100: Probabilidad de pérdida
+  ltv                Float?      // Lifetime value predicho
+  nextPurchaseDate   DateTime?   // Predicción próxima compra
+  bestContactTime    String?     // Mejor hora para contactar
+  preferredChannel   String?     // email, phone, whatsapp
+  
+  // Recomendaciones IA
+  suggestedActions   Json?       // Array de acciones recomendadas
+  lastAnalysis       DateTime?   // Última vez que se analizó
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Para historial de análisis (futuro)
+model AIAnalysisLog {
+  id        String   @id @default(cuid())
+  clientId  String
+  type      String   // task_suggestion, risk_analysis, ltv_calculation, etc
+  input     Json     // Datos usados para el análisis
+  output    Json     // Resultado del análisis
+  model     String   // Qué modelo de IA se usó
+  
+  createdAt DateTime @default(now())
+  
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  @@index([clientId, type])
+}
