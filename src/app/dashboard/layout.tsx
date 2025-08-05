@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { LayoutDashboard, Users, Settings, BarChart3 } from "lucide-react"
+import { LayoutDashboard, Users, Settings, BarChart3, GitBranch } from "lucide-react"
 import AIChatWidget from "@/components/AIChatWidget"
 
 export default function DashboardLayout({
@@ -29,6 +29,13 @@ export default function DashboardLayout({
             >
               <Users className="mr-3 h-5 w-5" />
               Clientes
+            </Link>
+            <Link
+              href="/dashboard/pipeline"
+              className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
+            >
+              <GitBranch className="mr-3 h-5 w-5" />
+              Pipeline
             </Link>
             <Link
               href="/dashboard/analytics"

@@ -23,19 +23,41 @@ model User {
   clients       Client[]
   interactions  Interaction[]
   insights      AIInsight[]
+  stages        Stage[]   // ✅ Etapas del pipeline
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
 
-// Modelo de Cliente (del negocio)
+// ✅ Modelo de Etapa del Pipeline
+model Stage {
+  id            String    @id @default(cuid())
+  name          String    // "Prospecto", "Contactado", "Vendido", etc.
+  description   String    @default("") // Descripción de la etapa
+  color         String    @default("#6B7280") // Color para la UI
+  order         Int       @default(0) // Orden en el pipeline (0, 1, 2, etc.)
+  isDefault     Boolean   @default(false) // Si es etapa por defecto
+  
+  // Relaciones
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clients       Client[]  // Clientes en esta etapa
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([userId, order])
+  @@unique([userId, name]) // No puede haber etapas duplicadas por usuario
+}
+
+// Modelo de Cliente (del negocio) - ✅ CON stageEnteredAt
 model Client {
   id            String    @id @default(cuid())
   name          String
   email         String?
   phone         String?
   
-  // Nuevos campos de información
+  // Información adicional
   idNumber      String?   // Número de identificación (cédula, pasaporte, etc.)
   idType        String?   // Tipo de identificación (cedula, pasaporte, residencia)
   address       String?   // Dirección
@@ -55,6 +77,11 @@ model Client {
   churnRisk     Float?    // 0-1 probabilidad de pérdida
   loyaltyScore  Float?    // 0-100 score de lealtad
   
+  // ✅ Pipeline - CON stageEnteredAt (COMO QUIERES)
+  stageId         String?   // ID de la etapa actual (null = no está en pipeline)
+  stage           Stage?    @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  stageEnteredAt  DateTime? // ✅ ESTE ES EL CAMPO QUE QUIERES
+  
   // Relaciones
   userId        String
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -66,12 +93,13 @@ model Client {
   @@index([userId])
   @@index([lastVisit])
   @@index([idNumber])
+  @@index([stageId]) // ✅ Índice para pipeline
 }
 
 // Modelo de Interacción (visita, compra, etc)
 model Interaction {
   id          String    @id @default(cuid())
-  type        String    // purchase, visit, note
+  type        String    // purchase, visit, note, pipeline_action
   amount      Float?
   notes       String?
   date        DateTime  @default(now())
@@ -84,6 +112,7 @@ model Interaction {
   
   @@index([clientId])
   @@index([date])
+  @@index([type])
 }
 
 // Modelo de Insights de IA
